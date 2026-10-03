@@ -12,7 +12,25 @@ The purpose of this project is to learn, document findings, and help developers 
 
 **Game:** Pumma Talladega
 
-The findings documented in this repository were discovered while researching the game's client-server communication.
+The finding documented in this repository was discovered while researching the game's client-server communication.
+
+---
+
+## 🧰 Tools & Methodology
+
+No advanced exploitation framework, custom toolchain, or sophisticated infrastructure was required to discover this issue.
+
+The research was performed using:
+
+* **Windows**
+* **Xeno**
+* **Roblox's built-in Developer Console**
+* **AI-assisted research and code analysis**
+* Several hours of manual testing and investigation
+
+The process primarily consisted of observing the game's client-server behavior, identifying an accessible `RemoteEvent`, experimenting with its parameters, and evaluating what happened when it was invoked repeatedly.
+
+This is worth highlighting because the finding demonstrates that potentially significant security weaknesses can sometimes be identified using relatively simple tooling and an understanding of how client-server communication works.
 
 ---
 
@@ -23,8 +41,8 @@ The findings documented in this repository were discovered while researching the
 * **Type:** RemoteEvent Abuse
 * **Potential weakness:** Missing or insufficient rate limiting
 * **Component:** `ChangeColour`
-* **Impact:** Potential server-side performance degradation
-* **Severity:** Depends on the server-side implementation
+* **Potential impact:** Server-side performance degradation
+* **Severity:** Dependent on server-side implementation
 
 ### Affected RemoteEvent
 
@@ -36,13 +54,13 @@ workspace.VehicleFolder.EiLouissCar.Colour.ColourScript.ChangeColour
 
 The `ChangeColour` RemoteEvent can be invoked directly by the client.
 
-During testing, it was possible to repeatedly send color values to the server without an apparent client-side restriction or effective server-side rate limit.
+During testing, it was possible to repeatedly send color values to the server without an apparent effective server-side rate limit.
 
-This behavior can potentially allow a malicious client to generate an excessive number of requests.
+This behavior allows a client to generate a large number of requests to the same RemoteEvent.
 
 ### Proof of Concept
 
-The original proof of concept demonstrates repeated calls to the RemoteEvent while cycling through RGB colors:
+The proof of concept continuously invokes the RemoteEvent while cycling through different colors:
 
 ```lua
 local targetRemote = workspace.VehicleFolder.EiLouissCar.Colour.ColourScript.ChangeColour
@@ -65,43 +83,62 @@ while running do
 end
 ```
 
-The purpose of this PoC is to demonstrate the behavior of the RemoteEvent under repeated requests.
+The PoC was created to demonstrate that the RemoteEvent could be repeatedly triggered from the client.
 
-### Potential Impact
+---
 
-Depending on how the server handles each request, excessive RemoteEvent calls could result in:
+## 💥 Potential Impact
+
+Depending on the server-side implementation, excessive RemoteEvent calls could cause:
 
 * Increased server workload
 * Unnecessary event processing
 * Performance degradation
 * Abuse of gameplay functionality
 
-The presence of unrestricted requests alone does **not** automatically mean that the game is vulnerable to a denial-of-service attack. The actual impact depends on the server-side implementation and available protections.
+The ability to repeatedly invoke an event does **not automatically constitute a denial-of-service vulnerability**.
+
+The actual severity depends on factors such as server-side processing, rate limiting, validation, and the measurable impact of the requests.
 
 ---
 
 ## 🛡️ Recommended Mitigations
 
-Developers should treat all client input as untrusted.
+Developers should treat all data received from clients as untrusted.
 
-Possible mitigations include:
+Recommended protections include:
 
-* Server-side validation
+* Server-side input validation
 * Per-player rate limiting
 * Cooldowns
 * Data-type validation
-* Input validation
-* Rejecting malformed requests
+* Rejecting malformed or unexpected values
 * Ignoring redundant requests
 * Monitoring abnormal RemoteEvent activity
 
-For example, a server could enforce a maximum number of requests allowed from a player within a specific time period.
-
-**Rate limiting must be implemented on the server**, since client-side restrictions can be bypassed by modified clients.
+Rate limiting should be implemented **server-side**, since client-side restrictions can be bypassed by modified clients.
 
 ---
 
-## 📖 Research Goals
+## 🧪 Research Process
+
+The discovery process was relatively straightforward:
+
+1. Observe the game's client-side behavior.
+2. Inspect accessible RemoteEvents.
+3. Identify an event responsible for changing the vehicle's color.
+4. Test whether the event could be triggered directly by the client.
+5. Experiment with different parameters.
+6. Test repeated invocation.
+7. Document the behavior and potential impact.
+
+No advanced exploit chain was required.
+
+The main challenge was understanding the behavior of the RemoteEvent and determining whether the server adequately protected it.
+
+---
+
+## 📚 Research Goals
 
 This repository exists primarily for educational and defensive security research.
 
@@ -132,23 +169,23 @@ If someone copies, modifies, or uses code from this repository to create another
 
 I do not authorize or endorse malicious use of this research.
 
-The repository is intended to document security research and help developers understand and mitigate potential vulnerabilities.
+The repository exists to document security research, demonstrate potential weaknesses, and help developers understand how to mitigate them.
 
 ---
 
 ## 📌 Important
 
-A proof-of-concept is not necessarily an indication of a critical vulnerability.
+A proof-of-concept is not necessarily evidence of a critical vulnerability.
 
-Severity should be determined based on:
+Severity should be evaluated based on:
 
 1. What the server actually does with the received data.
 2. Whether requests are rate-limited.
 3. The amount of server-side processing involved.
-4. Whether the behavior can affect other players.
+4. Whether the behavior affects other players.
 5. Whether measurable performance degradation occurs.
 
-Further testing should always be performed in an environment where the researcher has permission.
+All testing should be performed only in environments where the researcher has permission.
 
 ---
 
@@ -156,4 +193,4 @@ Further testing should always be performed in an environment where the researche
 
 This repository is intended for educational and security research purposes.
 
-By using any material from this repository, you acknowledge that you are responsible for your own actions and for ensuring that your use complies with applicable laws, platform rules, and the authorization of the system being tested.
+By using material from this repository, you acknowledge that you are responsible for your own actions and for ensuring that your use complies with applicable laws, platform rules, and the authorization of the system being tested.
